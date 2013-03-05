@@ -1,0 +1,15 @@
+{
+  "name": "tumblr-scrapr",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node app"
+  },
+  "dependencies": {
+    "express": "3.1.0",
+    "jade": "*",
+    "request": "2.14.0",
+    "cheerio": "0.10.7",
+    "archiver": "~0.4.0"
+  }
+}
