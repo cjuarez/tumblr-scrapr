@@ -1,12 +1,7 @@
-extends layout
-
-block content
-  h1= title
-  div.container
-    ul.thumbnails
-      each image in images
-        li.span3
-          .thumbnail
-            img.img-polaroid(src=image).tumblr-image
-            label
-              input(type='checkbox', checked)
+ul.thumbnails
+    each image in images
+      li.span3
+        .thumbnail
+          img.img-polaroid(src=image).tumblr-image
+          label
+            input(type='checkbox', checked)

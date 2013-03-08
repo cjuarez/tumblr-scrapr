@@ -28,8 +28,8 @@ app.configure('development', function () {
     app.use(express.errorHandler());
 });
 
-app.get('/', routes.index);
-app.get('/images', images.load);
+app.get('/', images.index);
+app.post('/images', images.load);
 app.post('/download', images.download);
 
 http.createServer(app).listen(app.get('port'), function () {

@@ -8,24 +8,52 @@ var cheerio  = require('cheerio'),
     fs       = require('fs'),
     archiver = require("archiver");
 
-exports.load = function(req, res) {
-    var url = 'http://cjuarez.tumblr.com';
-    request({uri: url}, function(err, response, body) {
-        //Just a basic error check
+function generateTempName(extension) {
+    var now = new Date();
+    return [
+        now.getYear(), now.getMonth(), now.getDate(),
+        '-',
+        process.pid,
+        '-',
+        (Math.random() * 0x100000000 + 1).toString(36),
+        '.',
+        extension
+    ].join('');
+}
+
+function launchNextRequest(url, currentPage, pages, res, images) {
+    request({uri: url+currentPage}, function (err, response, body) {
+        console.log(url+currentPage);
+        var $ = null;
         if (err && response.statusCode !== 200) {
-            console.log('Request error.');
+            console.log('Request error: ' + err);
         }
-        var $ = cheerio.load(body);
-        var images = [];
-        $('.post-photo img').each(function () {
+        $ = cheerio.load(body);
+        $('.post img').each(function () {
             images.push($(this).attr('src'));
         });
-        res.render('images', {
-            'title': url,
-            'images': images
-        });
-        res.end();
+        if (currentPage < pages) {
+            launchNextRequest(url, ++currentPage, pages, res, images);
+        } else {
+            console.log(images);
+            res.render('images', {
+                'images': images
+            });
+        }
+    })
+}
+
+exports.index = function (req, res) {
+    res.render('index', {
+        title: 'cjuarez tumblr scrapr'
     });
+};
+
+exports.load = function(req, res) {
+    var url = 'http://' + req.body.url + '.tumblr.com/page/',
+        pages = req.body.pages,
+        images = [];
+    launchNextRequest(url, 1, pages, res, images);
 };
 
 exports.download = function (req, res) {
@@ -33,42 +61,27 @@ exports.download = function (req, res) {
         len = 0,
         urls = req.body.images,
         zipFile = archiver('zip'),
-        //zipStream = fs.createWriteStream(res),
+        tempFileName = './public/' + generateTempName('zip'),
+        zipStream = fs.createWriteStream(tempFileName),
         imageStream = null,
         urlSegments = [],
-        fileExtension = '',
-        savedFiles = 0,
-        files = [],
-        checkSavedFiles = function () {
-            savedFiles++;
-            if (savedFiles === len) {
-                zipFiles();
-            }
-        },
-        zipFiles = function () {
-            var i = 0,
-                len = 0;
-            for (i =0, len = files.length; i < len; i++) {
-                zipFile.addFile(fs.createReadStream('./' + files[i]), {name: files[i]});
-            }
-            zipFile.finalize(function(err, written) {
-                if (err) {
-                    throw err;
-                }
-                console.log(written + ' total bytes written');
-                //res.download('./public/images.zip');
-            });
-        };
-    zipFile.on('error', function(err) {
+        fileName = '';
+    zipFile.on('error', function (err) {
         throw err;
     });
-    zipFile.pipe(res);
+    zipFile.pipe(zipStream);
     for (i = 0, len = urls.length; i < len; i++) {
         urlSegments = urls[i].split('/');
         fileName = urlSegments[urlSegments.length - 1];
-        imageStream = fs.createWriteStream('./' + fileName);
-        request.get(urls[i]).pipe(imageStream);
-        imageStream.on('close', checkSavedFiles);
-        files.push(fileName);
+        zipFile.addFile(request(urls[i]), {name: fileName});
     }
+    zipFile.finalize(function (err, written) {
+        if (err) {
+            throw err;
+        }
+        console.log(written + ' total bytes written');
+        res.json({
+            file: tempFileName
+        });
+    });
 };

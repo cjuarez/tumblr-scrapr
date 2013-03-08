@@ -1,5 +1,26 @@
 extends layout
 
 block content
-  h1= title
-  p Welcome to #{title}
+  .row
+    form.form-inline.scraper-parameters
+      span
+        |http://
+      input#tumblr(type= 'text', placeholder='cjuarez')
+      span
+        |.tumblr.com/
+      select#pages
+        option(value= '') Pages to Scrap
+        option(value= 1) 1
+        option(value= 5) 5
+        option(value= 10) 10
+        option(value= 20) 20
+      a.btn.btn-primary#btn-scrap
+        i.icon-search.icon-white
+        |  Scrap!
+      a.btn
+        i.icon-folder-open
+        |  Zip 'Em All
+  .row
+    form.form-inline.scraper-parameters
+      a.btn.btn-info Check/Uncheck All
+  .fetched-images
